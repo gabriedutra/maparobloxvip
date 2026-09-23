@@ -1,0 +1,93 @@
+{
+  "name": "RoubeOMonstrinho",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "Remotos": {
+        "$className": "Folder",
+        "PedirTrancar": { "$className": "RemoteEvent" },
+        "PedirRenascer": { "$className": "RemoteEvent" },
+        "Notificacao": { "$className": "RemoteEvent" },
+        "AvisoGlobal": { "$className": "RemoteEvent" }
+      }
+    },
+
+    "ServerScriptService": {
+      "Servidor": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Cliente": {
+          "$path": "src/client"
+        }
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": false
+      },
+      "Mapa": {
+        "$path": "mapa/Mapa.rbxmx"
+      }
+    },
+
+    "Lighting": {
+      "$properties": {
+        "Technology": "ShadowMap",
+        "ClockTime": 14,
+        "Brightness": 2.5,
+        "Ambient": [0.45, 0.45, 0.5],
+        "OutdoorAmbient": [0.55, 0.55, 0.6],
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 1,
+        "EnvironmentSpecularScale": 1
+      },
+      "Atmosfera": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.28,
+          "Offset": 0.2,
+          "Haze": 0.6,
+          "Glare": 0.2,
+          "Color": [0.78, 0.86, 1.0],
+          "Decay": [0.9, 0.75, 1.0]
+        }
+      },
+      "Brilho": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.6,
+          "Size": 24,
+          "Threshold": 1.6
+        }
+      },
+      "Cores": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Saturation": 0.15,
+          "Contrast": 0.05
+        }
+      }
+    },
+
+    "Players": {
+      "$properties": {
+        "RespawnTime": 3
+      }
+    },
+
+    "TextChatService": {
+      "$properties": {
+        "ChatVersion": "TextChatService"
+      }
+    }
+  }
+}
