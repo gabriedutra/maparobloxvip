@@ -11,6 +11,7 @@ local Chances = require(Interface:WaitForChild("Chances"))
 local ChatVIP = require(Interface:WaitForChild("ChatVIP"))
 local HUD = require(Interface:WaitForChild("HUD"))
 local Loja = require(Interface:WaitForChild("Loja"))
+local Politica = require(Interface:WaitForChild("Politica"))
 local Prompts = require(Interface:WaitForChild("Prompts"))
 local UI = require(Interface:WaitForChild("UI"))
 
@@ -23,6 +24,7 @@ local tela: ScreenGui = UI.criar("ScreenGui", {
 	Parent = jogador:WaitForChild("PlayerGui"),
 })
 
+Politica.iniciar()
 Avisos.iniciar(tela)
 Chances.iniciar(tela)
 Loja.iniciar(tela)

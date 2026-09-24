@@ -10,6 +10,7 @@
 	  • o botão "Comprar" da Sorte (loja) abre esta janela, com a compra embaixo;
 	  • a coluna que vale no momento fica marcada e a janela se atualiza sozinha.
 	As porcentagens vêm do Catalogo.lua, a mesma conta do sorteio do servidor.
+	O botão de compra só aparece onde a lei deixa vender a Sorte (Politica.lua).
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -21,6 +22,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Catalogo = require(Shared:WaitForChild("Catalogo"))
 local Config = require(Shared:WaitForChild("Config"))
 local Formatar = require(Shared:WaitForChild("Formatar"))
+local Politica = require(script.Parent.Politica)
 local UI = require(script.Parent.UI)
 
 local Chances = {}
@@ -305,14 +307,14 @@ function Chances.iniciar(tela: ScreenGui)
 	})
 	local idCompra: number? = nil
 	comprar.Activated:Connect(function()
-		if idCompra and idCompra > 0 then
+		if idCompra and idCompra > 0 and Politica.podeVenderSorte() == true then
 			MarketplaceService:PromptProductPurchase(jogador, idCompra)
 		end
 	end)
 
 	mostrarCompra = function(idProduto: number?)
 		idCompra = idProduto
-		local comBotao = idProduto ~= nil and idProduto > 0
+		local comBotao = idProduto ~= nil and idProduto > 0 and Politica.podeVenderSorte() == true
 		comprar.Visible = comBotao
 		lista.Size = UDim2.new(1, -28, 1, if comBotao then -236 else -180)
 		rodape.Position = UDim2.new(0, 20, 1, if comBotao then -100 else -44)

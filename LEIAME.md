@@ -30,7 +30,10 @@ Compre monstrinhos na esteira, ganhe dinheiro na sua base, roube os dos outros e
 
 > A **Sorte na Esteira** mostra as chances (com e sem sorte) antes da compra, e o botão
 > **🎲 Chances** mostra as chances a qualquer hora. O Roblox exige isso para itens pagos
-> que mexem na sorte, então não remova essa janela.
+> que mexem na sorte, então não remova essa janela. Onde a lei não deixa vender itens de
+> sorte pagos (o Roblox avisa pelo `ArePaidRandomItemsRestricted`), a Sorte não aparece
+> para o jogador. No questionário de maturidade, responda **Sim** para "itens aleatórios
+> pagos" e **Sim** para "respeita ArePaidRandomItemsRestricted".
 
 Preços, chances, renda, tempos (trancar, roubo, rebirth) e o catálogo de monstrinhos também ficam no `Config`.
 

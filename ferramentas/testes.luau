@@ -7,7 +7,8 @@
 	Cobre: Config/Catálogo (validação, sorteio e chances mostradas no jogo),
 	Formatar, Regras, construção do mapa e dos monstrinhos, DataStore (trava
 	de sessão, tentativas, saída, BindToClose), ProcessReceipt idempotente e
-	a interface do cliente (propriedades válidas, loja e janela de chances).
+	a interface do cliente (propriedades válidas, loja, janela de chances e
+	política de itens aleatórios pagos por região).
 	O DataStore, o MarketplaceService etc. são falsos (simulados).
 ]]
 
@@ -927,6 +928,16 @@ Ambiente.Servicos.CollectionService = {
 		return {}
 	end,
 }
+local politicaFalsa = { ArePaidRandomItemsRestricted = false }
+local falharPolitica = false
+Ambiente.Servicos.PolicyService = {
+	GetPolicyInfoForPlayerAsync = function()
+		if falharPolitica then
+			error("HTTP 500 (falha simulada)")
+		end
+		return politicaFalsa
+	end,
+}
 Ambiente.Globais.TweenInfo = {
 	new = function(...)
 		return { ... }
@@ -937,7 +948,6 @@ Ambiente.Instance = {
 		return envolver(roblox.Instance.new(classe))
 	end,
 }
-Ambiente.Task = task
 
 local playerGui = envolver(roblox.Instance.new("Folder"))
 local jogadorLocal = novoJogador(700)
@@ -960,6 +970,7 @@ teste("a interface monta sem erros (HUD, loja, chances, avisos)", function()
 	end
 	local cartao = tela.Loja.Itens.GradeProduto.SorteBoost
 	igual(cartao.Preco.Text, "49 Robux", "preço vindo do Roblox")
+	igual(cartao.Comprar.Text, "Comprar", "Sorte liberada pela política do Roblox")
 end)
 
 teste("janela de chances mostra as chances do sorteio (raridade e monstrinho)", function()
@@ -1017,6 +1028,52 @@ teste("outros produtos continuam indo direto para a compra", function()
 	disparar(tela.Loja.Itens.GradeProduto.PacoteDinheiro.Comprar, "Activated")
 	igual(#comprasPedidas, antes + 1, "não pediu a compra")
 	igual(comprasPedidas[#comprasPedidas], Config.Produtos.PacoteDinheiro, "produto comprado")
+end)
+
+local Politica = Ambiente.carregar("StarterPlayer/StarterPlayerScripts/Cliente/Interface/Politica")
+local ChancesCliente = Ambiente.carregar("StarterPlayer/StarterPlayerScripts/Cliente/Interface/Chances")
+
+-- Não deixa comprar a Sorte (nem pela loja nem pela janela de chances)
+local function sorteBloqueada()
+	local botaoLoja = tela.Loja.Itens.GradeProduto.SorteBoost.Comprar
+	igual(botaoLoja.Text, "Indisponível", "texto do botão da Sorte")
+	local antes = #comprasPedidas
+	disparar(botaoLoja, "Activated")
+	afirmar(not tela.Chances.Visible, "abriu a compra da Sorte")
+	ChancesCliente.abrir(Config.Produtos.SorteBoost)
+	afirmar(not tela.Chances.Comprar.Visible, "o botão de compra apareceu")
+	disparar(tela.Chances.Comprar, "Activated")
+	igual(#comprasPedidas, antes, "pediu a compra da Sorte")
+	ChancesCliente.fechar()
+end
+
+teste("onde a lei não deixa (ArePaidRandomItemsRestricted), a Sorte não é oferecida", function()
+	politicaFalsa.ArePaidRandomItemsRestricted = true
+	Politica.iniciar()
+	afirmar(esperarAte(function()
+		return Politica.podeVenderSorte() == false
+	end), "a política não foi aplicada")
+	sorteBloqueada()
+	politicaFalsa.ArePaidRandomItemsRestricted = false
+	Politica.iniciar()
+	afirmar(esperarAte(function()
+		return Politica.podeVenderSorte() == true
+	end), "não liberou de novo")
+	igual(tela.Loja.Itens.GradeProduto.SorteBoost.Comprar.Text, "Comprar")
+end)
+
+teste("se o Roblox não responder a política, a Sorte também não é oferecida", function()
+	falharPolitica = true
+	Politica.iniciar()
+	afirmar(esperarAte(function()
+		return Politica.podeVenderSorte() == false
+	end), "deveria bloquear depois das tentativas")
+	sorteBloqueada()
+	falharPolitica = false
+	Politica.iniciar()
+	afirmar(esperarAte(function()
+		return Politica.podeVenderSorte() == true
+	end), "não liberou de novo")
 end)
 
 -- ------------------------------------------------------------

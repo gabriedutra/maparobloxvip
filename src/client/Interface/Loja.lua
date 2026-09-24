@@ -4,7 +4,8 @@
 	O cliente só abre a janela de compra do Roblox; quem entrega o item é o
 	servidor (Passes.lua e Produtos.lua / ProcessReceipt).
 	A Sorte na Esteira mostra antes a janela de chances (Chances.lua), como o
-	Roblox exige para itens pagos que mexem na sorte.
+	Roblox exige para itens pagos que mexem na sorte, e só é oferecida onde a
+	lei deixa (Politica.lua).
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -15,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Avisos = require(script.Parent.Avisos)
 local Chances = require(script.Parent.Chances)
+local Politica = require(script.Parent.Politica)
 local UI = require(script.Parent.UI)
 
 local Loja = {}
@@ -96,6 +98,8 @@ local function criarCartao(pai: Instance, item: ItemLoja, tipo: TipoItem, ordem:
 		Parent = cartao,
 	})
 
+	local ehSorte = tipo == "Produto" and item.Chave == "SorteBoost"
+
 	local function jaPossui(): boolean
 		return tipo == "GamePass" and jogador:GetAttribute("Pass_" .. item.Chave) == true
 	end
@@ -107,6 +111,9 @@ local function criarCartao(pai: Instance, item: ItemLoja, tipo: TipoItem, ordem:
 		elseif jaPossui() then
 			botao.Text = "✔ Comprado"
 			botao.BackgroundColor3 = UI.Cores.Desativado
+		elseif ehSorte and Politica.podeVenderSorte() ~= true then
+			botao.Text = if Politica.podeVenderSorte() == nil then "..." else "Indisponível"
+			botao.BackgroundColor3 = UI.Cores.Desativado
 		else
 			botao.Text = "Comprar"
 			botao.BackgroundColor3 = UI.Cores.Sucesso
@@ -114,6 +121,11 @@ local function criarCartao(pai: Instance, item: ItemLoja, tipo: TipoItem, ordem:
 	end
 	if tipo == "GamePass" then
 		jogador:GetAttributeChangedSignal("Pass_" .. item.Chave):Connect(atualizar)
+	end
+	if ehSorte then
+		Politica.aoMudar(function()
+			atualizar()
+		end)
 	end
 	atualizar()
 
@@ -142,8 +154,15 @@ local function criarCartao(pai: Instance, item: ItemLoja, tipo: TipoItem, ordem:
 				return
 			end
 			MarketplaceService:PromptGamePassPurchase(jogador, id)
-		elseif item.Chave == "SorteBoost" then
-			Chances.abrir(id) -- mostra as chances; a compra fica embaixo da tabela
+		elseif ehSorte then
+			local pode = Politica.podeVenderSorte()
+			if pode == nil then
+				Avisos.notificar("Carregando... tente de novo em instantes.", "info")
+			elseif not pode then
+				Avisos.notificar("A Sorte na Esteira não está disponível para a sua conta ou região.", "info")
+			else
+				Chances.abrir(id) -- mostra as chances; a compra fica embaixo da tabela
+			end
 		else
 			MarketplaceService:PromptProductPurchase(jogador, id)
 		end
