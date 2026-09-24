@@ -77,7 +77,7 @@ Config.Loja = {
 			Chave = "SorteBoost",
 			Nome = "Sorte na Esteira (10 min)",
 			Emoji = "🍀",
-			Descricao = "Monstrinhos raros aparecem muito mais na esteira por 10 minutos!",
+			Descricao = "Raros aparecem bem mais na esteira do servidor por 10 min!",
 			Cor = Color3.fromRGB(60, 200, 90),
 		},
 		{
@@ -148,6 +148,8 @@ Config.Esteira = {
 }
 
 -- Boost de sorte (Developer Product "SorteBoost")
+-- As chances com e sem sorte aparecem no jogo (botão "🎲 Chances" e antes de
+-- comprar), como o Roblox exige para itens pagos que mexem na sorte.
 Config.Sorte = {
 	Duracao = 600, -- 10 minutos (compras repetidas somam tempo)
 	-- A chance de cada raridade é multiplicada por estes valores enquanto a sorte estiver ativa

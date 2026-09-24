@@ -60,6 +60,9 @@ Ambiente.Task = task
 Ambiente.Instance = roblox.Instance
 Ambiente.Os = os
 
+-- Outras globais que o Lune não tem (ex.: TweenInfo), para os testes preencherem
+Ambiente.Globais = {} :: { [string]: any }
+
 -- Random do Roblox (o Lune não tem): mesma interface básica
 local RandomFalso = {}
 RandomFalso.__index = RandomFalso
@@ -161,6 +164,9 @@ local function criarAmbiente(caminho: string): { [string]: any }
 	env.Random = Ambiente.Random
 	env.Instance = Ambiente.Instance
 	env.os = Ambiente.Os
+	for nome, valor in Ambiente.Globais do
+		env[nome] = valor
+	end
 	env.warn = function(...)
 		print("[warn]", ...)
 	end

@@ -3,6 +3,8 @@
 	Janela da loja com os Game Passes e Developer Products do Config.lua.
 	O cliente só abre a janela de compra do Roblox; quem entrega o item é o
 	servidor (Passes.lua e Produtos.lua / ProcessReceipt).
+	A Sorte na Esteira mostra antes a janela de chances (Chances.lua), como o
+	Roblox exige para itens pagos que mexem na sorte.
 ]]
 
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -12,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Avisos = require(script.Parent.Avisos)
+local Chances = require(script.Parent.Chances)
 local UI = require(script.Parent.UI)
 
 local Loja = {}
@@ -139,6 +142,8 @@ local function criarCartao(pai: Instance, item: ItemLoja, tipo: TipoItem, ordem:
 				return
 			end
 			MarketplaceService:PromptGamePassPurchase(jogador, id)
+		elseif item.Chave == "SorteBoost" then
+			Chances.abrir(id) -- mostra as chances; a compra fica embaixo da tabela
 		else
 			MarketplaceService:PromptProductPurchase(jogador, id)
 		end

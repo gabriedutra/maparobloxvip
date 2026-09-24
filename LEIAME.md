@@ -28,13 +28,18 @@ Compre monstrinhos na esteira, ganhe dinheiro na sua base, roube os dos outros e
    Enquanto um ID for `0`, o item aparece como "Em breve" na loja.
 4. Publique de novo.
 
+> A **Sorte na Esteira** mostra as chances (com e sem sorte) antes da compra, e o botão
+> **🎲 Chances** mostra as chances a qualquer hora. O Roblox exige isso para itens pagos
+> que mexem na sorte, então não remova essa janela.
+
 Preços, chances, renda, tempos (trancar, roubo, rebirth) e o catálogo de monstrinhos também ficam no `Config`.
 
 ## 3. Publicar
 
-1. **Arquivo → Publicar no Roblox** (*File → Publish to Roblox*, Alt+P) e crie uma nova experiência.
-2. Defina o **máximo de jogadores por servidor em 8** (uma base por jogador): no Creator Hub → sua experiência → **Lugares** → configurar o lugar → tamanho do servidor. Se entrar mais gente, ela espera uma base vagar.
-3. Em **Permissões** (*Permissions*), deixe o jogo **Público** quando quiser lançar.
+1. **Arquivo → Publicar no Roblox** (*File → Publish to Roblox*, Alt+P), preencha nome e descrição e clique em **Create**.
+2. Limite o servidor a **8 jogadores** (uma base por jogador): Creator Hub → sua experiência → **Configure → Places** → clique no lugar → **Access** → **Maximum Visitor Count** = `8` → **Save Changes**. Se entrar mais gente, ela espera uma base vagar.
+3. Para deixar **Público**: verifique a idade da conta (Roblox → Configurações → Informações da conta), responda o questionário em **Configure → Questionnaire** e depois escolha **Public** em **Configure → Settings → Audience**.
+4. Depois de publicar uma atualização, use **Configure → Server Management → Restart Servers** para todo mundo pegar a versão nova.
 
 ---
 

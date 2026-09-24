@@ -24,6 +24,7 @@ UI.Cores = {
 	Loja = Color3.fromRGB(60, 140, 255),
 	Trancar = Color3.fromRGB(235, 70, 80),
 	Renascer = Color3.fromRGB(165, 90, 255),
+	Chances = Color3.fromRGB(40, 190, 170),
 	Desativado = Color3.fromRGB(95, 95, 115),
 	Sucesso = Color3.fromRGB(60, 190, 95),
 	Erro = Color3.fromRGB(225, 65, 75),

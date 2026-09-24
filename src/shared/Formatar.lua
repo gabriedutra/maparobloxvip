@@ -76,6 +76,16 @@ function Formatar.multiplicador(valor: number): string
 	return "x" .. limparDecimais(string.format("%.2f", arredondado))
 end
 
+-- Chance em %, com 5 algarismos significativos: 55%, 5,5%, 34,268%, 0,16667%.
+-- (o Roblox não deixa arredondar demais as chances de itens pagos que mexem na sorte)
+function Formatar.chance(porcentagem: number): string
+	if type(porcentagem) ~= "number" or porcentagem ~= porcentagem or porcentagem <= 0 then
+		return "0%"
+	end
+	local casas = math.clamp(4 - math.floor(math.log10(porcentagem)), 0, 12)
+	return limparDecimais(string.format("%." .. casas .. "f", porcentagem)) .. "%"
+end
+
 -- Tempo: 45s, 1:05, 1:02:03
 function Formatar.tempo(segundos: number): string
 	segundos = math.max(0, math.ceil(segundos))

@@ -4,9 +4,10 @@
 	Uso (na pasta do projeto):
 	    lune run ferramentas/testes
 
-	Cobre: Config/Catálogo (validação e sorteio), Formatar, Regras,
-	construção do mapa e dos monstrinhos, DataStore (trava de sessão,
-	tentativas, saída, BindToClose) e ProcessReceipt idempotente.
+	Cobre: Config/Catálogo (validação, sorteio e chances mostradas no jogo),
+	Formatar, Regras, construção do mapa e dos monstrinhos, DataStore (trava
+	de sessão, tentativas, saída, BindToClose), ProcessReceipt idempotente e
+	a interface do cliente (propriedades válidas, loja e janela de chances).
 	O DataStore, o MarketplaceService etc. são falsos (simulados).
 ]]
 
@@ -329,6 +330,39 @@ teste("boost de sorte aumenta as chances raras", function()
 	perto(soma, 100, 1e-6, "soma das chances")
 end)
 
+teste("chance de cada monstrinho soma a da raridade (com e sem sorte)", function()
+	for _, multiplicadores in { {}, Config.Sorte.Multiplicadores } do
+		local porRaridade = Catalogo.chances(multiplicadores)
+		local porMonstrinho = Catalogo.chancesMonstrinhos(multiplicadores)
+		local soma = 0
+		for _, raridade in Catalogo.Raridades do
+			local somaRaridade = 0
+			for _, m in Catalogo.PorRaridade[raridade.Id] do
+				somaRaridade += porMonstrinho[m.Id]
+			end
+			perto(somaRaridade, porRaridade[raridade.Id], 1e-9, "monstrinhos de " .. raridade.Id)
+			soma += somaRaridade
+		end
+		perto(soma, 100, 1e-9, "soma de todos os monstrinhos")
+	end
+end)
+
+teste("chances mostradas no jogo = sorteio de verdade (com sorte)", function()
+	local aleatorio = Ambiente.Random.new(2024)
+	local contagem = {}
+	local N = 200000
+	for _ = 1, N do
+		local m = Catalogo.sortear(function()
+			return aleatorio:NextNumber()
+		end, Config.Sorte.Multiplicadores)
+		contagem[m.Id] = (contagem[m.Id] or 0) + 1
+	end
+	for id, esperado in Catalogo.chancesMonstrinhos(Config.Sorte.Multiplicadores) do
+		local obtido = (contagem[id] or 0) / N * 100
+		perto(obtido, esperado, math.max(0.1, esperado * 0.15), "chance de " .. id)
+	end
+end)
+
 teste("sortear devolve monstrinhos da raridade sorteada", function()
 	local aleatorio = Ambiente.Random.new(7)
 	for _ = 1, 2000 do
@@ -371,6 +405,18 @@ teste("renda, multiplicador e tempo", function()
 	igual(Formatar.tempo(59.2), "1:00")
 	igual(Formatar.tempo(65), "1:05")
 	igual(Formatar.tempo(3661), "1:01:01")
+end)
+
+teste("chances em % (5 algarismos significativos)", function()
+	igual(Formatar.chance(55), "55%")
+	igual(Formatar.chance(5.5), "5,5%")
+	igual(Formatar.chance(0.5), "0,5%")
+	igual(Formatar.chance(100), "100%")
+	igual(Formatar.chance(100 * 12 / 160.5), "7,4766%")
+	igual(Formatar.chance(100 * 55 / 160.5), "34,268%")
+	igual(Formatar.chance(0.5 / 3), "0,16667%")
+	igual(Formatar.chance(0), "0%")
+	igual(Formatar.chance(0 / 0), "0%")
 end)
 
 -- ------------------------------------------------------------
@@ -788,6 +834,189 @@ teste("Sorte na esteira: ativa para o servidor e avisa todo mundo", function()
 	igual(Produtos._processarRecibo({ PlayerId = 20, ProductId = 333, PurchaseId = "sorte-1" }), Decisao.PurchaseGranted)
 	afirmar((atributosWorkspace.SorteAte or 0) > os.clock(), "SorteAte não foi definido")
 	afirmar(#remotos.AvisoGlobal.enviados > avisosAntes, "aviso global não enviado")
+end)
+
+-- ------------------------------------------------------------
+secao("Interface do cliente")
+-- ------------------------------------------------------------
+
+-- As telas são montadas com instâncias de verdade do Lune: propriedade com
+-- nome ou tipo errado dá erro, como no Roblox. Só os eventos são falsos.
+local EVENTOS_GUI = { Activated = true, MouseEnter = true, MouseLeave = true, MouseButton1Down = true, MouseButton1Up = true }
+local proxyDe: { [any]: any } = {}
+local realDe: { [any]: any } = {}
+
+local function envolver(real: any): any
+	local sinais: { [string]: any } = {}
+	local proxy = setmetatable({}, {
+		__index = function(_, chave)
+			if EVENTOS_GUI[chave] then
+				sinais[chave] = sinais[chave] or novoSinal()
+				return sinais[chave]
+			elseif chave == "GetPropertyChangedSignal" or chave == "GetAttributeChangedSignal" then
+				return function(_, nome: string)
+					sinais[chave .. "/" .. nome] = sinais[chave .. "/" .. nome] or novoSinal()
+					return sinais[chave .. "/" .. nome]
+				end
+			end
+			local valor = real[chave]
+			if type(valor) == "function" then
+				return function(_, ...)
+					return valor(real, ...)
+				end
+			end
+			return valor
+		end,
+		__newindex = function(_, chave, valor)
+			real[chave] = realDe[valor] or valor
+		end,
+	})
+	proxyDe[real] = proxy
+	realDe[proxy] = real
+	return proxy
+end
+
+-- Dispara um evento (ex.: clique) numa instância criada pelos scripts do cliente
+local function disparar(instancia: any, evento: string)
+	afirmar(instancia, "instância não encontrada para " .. evento)
+	local proxy = proxyDe[instancia]
+	afirmar(proxy, "instância não foi criada pelos scripts")
+	proxy[evento]:Fire()
+end
+
+local comprasPedidas: { number } = {}
+local sinaisWorkspace: { [string]: any } = {}
+local Marketplace = Ambiente.Servicos.MarketplaceService
+Marketplace.PromptProductPurchase = function(_, _, id)
+	table.insert(comprasPedidas, id)
+end
+Marketplace.PromptGamePassPurchase = function(_, _, id)
+	table.insert(comprasPedidas, id)
+end
+Marketplace.GetProductInfo = function()
+	return { PriceInRobux = 49 }
+end
+local WorkspaceFalso = Ambiente.Servicos.Workspace
+WorkspaceFalso.CurrentCamera = {
+	ViewportSize = roblox.Vector2.new(1280, 720),
+	GetPropertyChangedSignal = function()
+		return novoSinal()
+	end,
+}
+WorkspaceFalso.GetPropertyChangedSignal = function()
+	return novoSinal()
+end
+WorkspaceFalso.GetAttributeChangedSignal = function(_, nome)
+	sinaisWorkspace[nome] = sinaisWorkspace[nome] or novoSinal()
+	return sinaisWorkspace[nome]
+end
+WorkspaceFalso.WaitForChild = function()
+	return nil
+end
+Ambiente.Servicos.TweenService = {
+	Create = function()
+		return { Play = function() end, Completed = { Wait = function() end } }
+	end,
+}
+Ambiente.Servicos.TextChatService = { ChatVersion = roblox.Enum.ChatVersion.TextChatService }
+Ambiente.Servicos.CollectionService = {
+	GetInstanceAddedSignal = function()
+		return novoSinal()
+	end,
+	GetTagged = function()
+		return {}
+	end,
+}
+Ambiente.Globais.TweenInfo = {
+	new = function(...)
+		return { ... }
+	end,
+}
+Ambiente.Instance = {
+	new = function(classe: string)
+		return envolver(roblox.Instance.new(classe))
+	end,
+}
+Ambiente.Task = task
+
+local playerGui = envolver(roblox.Instance.new("Folder"))
+local jogadorLocal = novoJogador(700)
+function jogadorLocal:GetAttributeChangedSignal()
+	return novoSinal()
+end
+function jogadorLocal:WaitForChild(nome)
+	return if nome == "PlayerGui" then playerGui else nil
+end
+PlayersFalso.LocalPlayer = jogadorLocal
+
+local tela: any = nil
+
+teste("a interface monta sem erros (HUD, loja, chances, avisos)", function()
+	Ambiente.carregar("StarterPlayer/StarterPlayerScripts/Cliente/Main")
+	tela = playerGui:FindFirstChild("RoubeOMonstrinhoUI")
+	afirmar(tela, "ScreenGui não foi criada")
+	for _, nome in { "Status", "Botoes", "Indicadores", "Loja", "Chances", "Notificacoes", "Avisos" } do
+		afirmar(tela:FindFirstChild(nome), "faltou " .. nome)
+	end
+	local cartao = tela.Loja.Itens.GradeProduto.SorteBoost
+	igual(cartao.Preco.Text, "49 Robux", "preço vindo do Roblox")
+end)
+
+teste("janela de chances mostra as chances do sorteio (raridade e monstrinho)", function()
+	local lista = tela.Chances.Lista
+	local normal = Catalogo.chances(nil)
+	local comSorte = Catalogo.chances(Config.Sorte.Multiplicadores)
+	local porMonstrinho = Catalogo.chancesMonstrinhos(Config.Sorte.Multiplicadores)
+	for _, raridade in Catalogo.Raridades do
+		local linha = lista:FindFirstChild(raridade.Id)
+		afirmar(linha, "faltou a linha de " .. raridade.Id)
+		igual(linha.Normal.Text, Formatar.chance(normal[raridade.Id]), "chance normal de " .. raridade.Id)
+		igual(linha.ComSorte.Text, Formatar.chance(comSorte[raridade.Id]), "chance com sorte de " .. raridade.Id)
+		local primeiro = Catalogo.PorRaridade[raridade.Id][1]
+		afirmar(string.find(linha.Monstrinhos.Text, primeiro.Nome, 1, true), "faltou " .. primeiro.Nome)
+		afirmar(string.find(linha.Monstrinhos.Text, Formatar.chance(porMonstrinho[primeiro.Id]), 1, true), "faltou a chance de " .. primeiro.Nome)
+	end
+	print("      ex.: Mítico " .. lista.Mitico.Normal.Text .. " → " .. lista.Mitico.ComSorte.Text .. " | " .. lista.Mitico.Monstrinhos.Text)
+end)
+
+teste("comprar a Sorte na loja mostra as chances antes da compra", function()
+	atributosWorkspace.SorteAte = 0
+	local janela = tela.Chances
+	local antes = #comprasPedidas
+	disparar(tela.Loja.Itens.GradeProduto.SorteBoost.Comprar, "Activated")
+	afirmar(janela.Visible, "a janela de chances não abriu")
+	igual(#comprasPedidas, antes, "pediu a compra antes de mostrar as chances")
+	afirmar(janela.Comprar.Visible, "botão de compra escondido")
+	afirmar(string.find(janela.Estado.Text, "NORMAIS", 1, true), "estado sem sorte: " .. janela.Estado.Text)
+	afirmar(string.find(janela.Cabecalho.Normal.Text, "agora", 1, true), "coluna normal não marcada")
+	disparar(janela.Comprar, "Activated")
+	igual(comprasPedidas[#comprasPedidas], Config.Produtos.SorteBoost, "produto comprado")
+end)
+
+teste("com a sorte ativa, a janela marca as chances com sorte", function()
+	local janela = tela.Chances
+	atributosWorkspace.SorteAte = os.clock() + 300
+	sinaisWorkspace.SorteAte:Fire()
+	afirmar(string.find(janela.Estado.Text, "Sorte ativa", 1, true), "estado com sorte: " .. janela.Estado.Text)
+	afirmar(string.find(janela.Cabecalho.ComSorte.Text, "agora", 1, true), "coluna com sorte não marcada")
+	disparar(janela.Fechar, "Activated")
+	afirmar(not janela.Visible, "não fechou")
+end)
+
+teste("botão Chances do HUD abre a janela (sem compra) e fecha", function()
+	local janela = tela.Chances
+	disparar(tela.Botoes.Chances, "Activated")
+	afirmar(janela.Visible, "não abriu")
+	afirmar(not janela.Comprar.Visible, "o botão de compra não deveria aparecer")
+	disparar(tela.Botoes.Chances, "Activated")
+	afirmar(not janela.Visible, "não fechou")
+end)
+
+teste("outros produtos continuam indo direto para a compra", function()
+	local antes = #comprasPedidas
+	disparar(tela.Loja.Itens.GradeProduto.PacoteDinheiro.Comprar, "Activated")
+	igual(#comprasPedidas, antes + 1, "não pediu a compra")
+	igual(comprasPedidas[#comprasPedidas], Config.Produtos.PacoteDinheiro, "produto comprado")
 end)
 
 -- ------------------------------------------------------------

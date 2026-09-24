@@ -89,6 +89,10 @@ for indice, m in Config.Monstrinhos do
 	if not FORMAS[m.Forma] then
 		erroConfig("Monstrinho '" .. nome .. "' tem Forma inválida (use Bola, Cubo ou Cilindro).")
 	end
+	local peso = (m :: any).Peso
+	if peso ~= nil and (type(peso) ~= "number" or peso <= 0) then
+		erroConfig("Monstrinho '" .. nome .. "' tem Peso inválido (use um número maior que 0).")
+	end
 	local info = table.clone(m) :: any
 	info.Extras = info.Extras or {}
 	info.Olhos = math.clamp(math.floor(info.Olhos or 2), 1, 3)
@@ -99,6 +103,16 @@ end
 
 if #Catalogo.Lista == 0 then
 	erroConfig("Nenhum monstrinho configurado em Config.Monstrinhos.")
+end
+
+-- Boost de sorte
+for id, mult in Config.Sorte.Multiplicadores :: { [any]: any } do
+	if type(id) ~= "string" or not Catalogo.RaridadePorId[id] then
+		erroConfig("Config.Sorte.Multiplicadores usa a raridade desconhecida '" .. tostring(id) .. "'.")
+	end
+	if type(mult) ~= "number" or mult < 0 then
+		erroConfig("Config.Sorte.Multiplicadores." .. tostring(id) .. " precisa ser um número >= 0.")
+	end
 end
 
 function Catalogo.obter(id: any): Monstrinho?
@@ -135,6 +149,36 @@ function Catalogo.chances(multiplicadores: { [string]: number }?): { [string]: n
 		resultado[r.Id] = if total > 0 then pesoRaridade(r, multiplicadores) / total * 100 else 0
 	end
 	return resultado
+end
+
+-- Chance (em %) de cada monstrinho: a chance da raridade dividida entre os
+-- monstrinhos dela pelo Peso (mesma conta do sortear). A janela de chances usa isto.
+function Catalogo.chancesMonstrinhos(multiplicadores: { [string]: number }?): { [string]: number }
+	local porRaridade = Catalogo.chances(multiplicadores)
+	local resultado = {}
+	for _, r in Catalogo.Raridades do
+		local opcoes = Catalogo.PorRaridade[r.Id]
+		local total = 0
+		for _, m in opcoes do
+			total += m.Peso or 1
+		end
+		for _, m in opcoes do
+			resultado[m.Id] = porRaridade[r.Id] * (m.Peso or 1) / total
+		end
+	end
+	return resultado
+end
+
+-- Alguma raridade precisa poder aparecer (com e sem sorte); senão as chances
+-- mostradas no jogo não bateriam com o sorteio
+for _, multiplicadores in { {}, Config.Sorte.Multiplicadores } do
+	local total = 0
+	for _, r in Catalogo.Raridades do
+		total += pesoRaridade(r, multiplicadores)
+	end
+	if total <= 0 then
+		erroConfig("Nenhuma raridade pode aparecer na esteira: confira as Chances e Config.Sorte.Multiplicadores.")
+	end
 end
 
 -- aleatorio: função que devolve um número em [0, 1)

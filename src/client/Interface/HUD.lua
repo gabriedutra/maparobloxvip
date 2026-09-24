@@ -2,7 +2,8 @@
 	HUD.lua
 	Interface principal:
 	  • painel com dinheiro, renda por segundo, multiplicador e rebirths;
-	  • botões: Loja, Trancar Base (com contagem) e Renascer (com confirmação);
+	  • botões: Loja, Trancar Base (com contagem), Renascer (com confirmação)
+	    e Chances (chances da esteira, com e sem sorte);
 	  • indicadores no topo: sorte ativa, carregando monstrinho, carregando dados;
 	  • marcador "SUA BASE" em cima da sua base.
 
@@ -54,7 +55,7 @@ local function pilula(pai: Instance, nome: string, cor: Color3, ordem: number): 
 	return quadro, texto
 end
 
-function HUD.iniciar(tela: ScreenGui, acoes: { abrirLoja: () -> () })
+function HUD.iniciar(tela: ScreenGui, acoes: { abrirLoja: () -> (), abrirChances: () -> () })
 	-- --------------------------------------------------------
 	-- Painel de status (canto superior esquerdo)
 	-- --------------------------------------------------------
@@ -118,7 +119,7 @@ function HUD.iniciar(tela: ScreenGui, acoes: { abrirLoja: () -> () })
 		Name = "Botoes",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 14, 0.5, 20),
-		Size = UDim2.fromOffset(190, 200),
+		Size = UDim2.fromOffset(190, 252),
 		BackgroundTransparency = 1,
 		Parent = tela,
 	})
@@ -150,6 +151,15 @@ function HUD.iniciar(tela: ScreenGui, acoes: { abrirLoja: () -> () })
 		BackgroundColor3 = UI.Cores.Renascer,
 		Size = UDim2.fromOffset(190, 66),
 		LayoutOrder = 3,
+		TamanhoMaximo = 22,
+		Parent = coluna,
+	})
+	local botaoChances = UI.botao({
+		Name = "Chances",
+		Text = "🎲 Chances",
+		BackgroundColor3 = UI.Cores.Chances,
+		Size = UDim2.fromOffset(190, 44),
+		LayoutOrder = 4,
 		TamanhoMaximo = 22,
 		Parent = coluna,
 	})
@@ -343,6 +353,10 @@ function HUD.iniciar(tela: ScreenGui, acoes: { abrirLoja: () -> () })
 	-- --------------------------------------------------------
 	botaoLoja.Activated:Connect(function()
 		acoes.abrirLoja()
+	end)
+
+	botaoChances.Activated:Connect(function()
+		acoes.abrirChances()
 	end)
 
 	botaoTrancar.Activated:Connect(function()
