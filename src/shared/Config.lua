@@ -21,16 +21,16 @@ local Config = {}
 -- ============================================================
 
 Config.GamePasses = {
-	VIP = 0, -- Tag [VIP] no chat + renda 1.5x
-	DinheiroDobrado = 0, -- 2x Dinheiro (renda dobrada)
-	SlotsExtras = 0, -- +4 slots na base
-	CarregarRapido = 0, -- Anda mais rápido carregando um monstrinho roubado
+	VIP = 1995224348, -- Tag [VIP] no chat + renda 1.5x
+	DinheiroDobrado = 1994276361, -- 2x Dinheiro (renda dobrada)
+	SlotsExtras = 1996022354, -- +4 slots na base
+	CarregarRapido = 1995200362, -- Anda mais rápido carregando um monstrinho roubado
 }
 
 Config.Produtos = {
-	TrancarAgora = 0, -- Tranca a base na hora (ignora o cooldown)
-	SorteBoost = 0, -- Sorte na esteira por 10 minutos (vale para o servidor todo)
-	PacoteDinheiro = 0, -- Pacote de dinheiro
+	TrancarAgora = 3714489689, -- Tranca a base na hora (ignora o cooldown)
+	SorteBoost = 3714489735, -- Sorte na esteira por 10 minutos (vale para o servidor todo)
+	PacoteDinheiro = 3714489748, -- Pacote de dinheiro
 }
 
 -- Como cada item aparece na loja (a chave precisa bater com as tabelas acima)
